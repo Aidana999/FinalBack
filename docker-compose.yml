@@ -1,0 +1,60 @@
+version: "3.7"
+
+networks:
+  docker-net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  static-files:
+
+services:
+  nginx:
+    restart: always
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - static-files:/www/data/app/
+      - ./config/nginx/:/etc/nginx/conf.d/
+    networks:
+      - docker-net
+    depends_on:
+      - app
+
+  postgres:
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_PASSWORD=dbCXeDTR5vFhZkxRCq
+      - POSTGRES_DB=test
+      - POSTGRES_USER=test
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - docker-net
+
+  app:
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+    volumes:
+      - ./app:/app/
+      - static-files:/app/static/
+    environment:
+      - SECRET_KEY=rwnY89p5wduKE5nK3mqQWrMwLUb2bqNP5Q3nDZkemnBbtwp2P5RmTLbjtL3ysBx8
+      - POSTGRES_USER=test
+      - POSTGRES_DB=test
+      - POSTGRES_PASSWORD=dbCXeDTR5vFhZkxRCq
+      - POSTGRES_HOST=postgres
+      - DEBUG=True
+      - CORS_ORIGIN_ALLOW_ALL=True
+      - RESOURCES_DIR=/data/resources/
+      - FIREBASE_SERVICE_ACCOUNT_KEY=/data/service_account.json
+      - REDIS_URL=redis://redis:6379
+      - LOGGING_LEVEL=INFO
+      - ENVIRONMENT=LOCAL
+    depends_on:
+      - postgres
+
+    networks:
+      - docker-net
